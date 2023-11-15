@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    
+    <title>battle line ai</title>
+    <style>
+        body {
+            height: 100vh;
+            width: 100vw;
+            /* background-color: khaki;  */
+        }
+        main {
+            width: 100%;
+            height: 90vh;
+            color: gray;
+        }
+        .table{
+            height:80%;
+            width: 100%;
+            background-color:gray;
+            z-index: 10;
+        }
+        .hand{
+            height: 20%;
+            width: 100%;
+            background:bisque;
+            display: flex;
+        }
+        .card{
+            flex-basis: 10%;
+            background-color: aqua;
+        }
+    </style>
+  </head>
+  <body>
+    <main>
+        <div class="table">
+            <div class="enemy_side">
+
+            </div>
+            <div class="your_side"></div>
+        </div>
+        <div class="hand">
+            <div class="card" draggable="true"></div>
+        </div>
+    </main>
+    <footer>
+        <p>battle line ai copylight odakura</p>
+    </footer>
+    <script>
+    //   document.write('Goodbye!');
+        
+    </script>
+    <py-script> print('Now you can!') </py-script>
+  </body>
+</html>
