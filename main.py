@@ -4,97 +4,9 @@ from scipy.stats import geom
 import collections
 import math
 import operator
+import env
+import player
 
-class Game:
-    def __init__(self,player_1,player_2):
-        deck = Deck()
-        table = Table()
-        self.deck = deck
-        self.table = table
-        self.player1 = player_1
-        self.player2 = player_2
-    def decision_number(self):
-        player_1_number = random.randrange(2)
-        player_2_number = 1 if player_1_number == 1 else 2
-        self.player1.set_player_number(player_1_number)
-        self.player2.set_player_number(player_2_number)
-
-    def distribution(self):
-        hands1 = self.deck.build_hands()
-        self.player1.get_hands(hands1)
-        hands2 = self.deck.build_hands()
-        self.player2.get_hands(hands2)
-    def playing_turn(self):
-        player_1_table,player_1_card = self.player1.select_card(self.table.table)
-        self.table.set_card(1,player_1_card,player_1_table)
-        card_1 = self.deck.draw_card()
-        self.player1.get_card(card_1)
-        player_2_table,player_2_card = self.player2.select_card(self.table.table)
-        self.table.set_card(2,player_2_card,player_2_table)
-        card_2 = self.deck.draw_card()
-        self.player2.get_card(card_2)
-class Deck:
-    def __init__(self):
-        cards = []
-        n = 0
-        color_n = 0
-        number_n = 1
-        while n < 60:
-            color = ''
-            if color_n == 0:
-                color = 'RED'
-            elif color_n == 1:
-                color = 'ORANGE'
-            elif color_n == 2:
-                color = 'YELLOW'
-            elif color_n == 3:
-                color = 'BLUE'
-            elif color_n == 4:
-                color = 'PURPLE'
-            elif color_n == 5:
-                color = 'GREEN'
-            cards.append({'color': color, 'number': number_n})
-            if number_n == 10:
-                color_n = color_n + 1 if color_n < 6 else 0
-                number_n = 0
-            n += 1
-            number_n += 1
-        self.deck = cards
-    def build_hands(self):
-        n = 0
-        hands = []
-        while n < 7:
-            card = self.deck.pop(random.randrange(len(self.deck)))
-            hands.append(card)
-            n += 1
-        return hands
-    def draw_card(self):
-        card = self.deck.pop(random.randrange(len(self.deck)))
-        return card
-class Table:
-    def __init__(self):
-        # 9*3*2のテーブルを再現
-        self.table = [[[],[]],[[],[]],[[],[]],[[],[]],[[],[]],[[],[]],[[],[]],[[],[]],[[],[]]]
-    def set_card(self,player_number,card,table_number):
-        self.table[table_number][player_number - 1].append(card)
-    def check_table(self):
-        return self.table
-class Player:
-    def __init__(self):
-        self.hands = []
-        self.play_log = []
-        self.player_number = 0
-    def get_hands(self,hands):
-        self.hands = hands
-    def select_card(self,table):
-        # 選択のアルゴリズムを用意
-        card = self.hands.pop(random.randrange(7))
-        number = random.randrange(9)
-        return number, card
-    def get_card(self,card):
-        self.hands.append(card)
-    def set_player_number(self,number):
-        self.player_number = number
 
 # outs計算アルゴリズム
 # outsを最後までに獲得できる期待値
@@ -134,9 +46,9 @@ def dup_two_calculate_draw_exp(outs_n, card_count):
 
 # テストプレイ
 def playing_game():
-    player_1 = Player()
-    player_2 = Player()
-    game = Game(player_1,player_2)
+    player_1 = player.Player()
+    player_2 = player.Player()
+    game = env.Game(player_1,player_2)
     game.distribution()
     turn_count = 0
     while turn_count < 10:
@@ -193,25 +105,26 @@ def test_hand_scoring():
     print(score)
 
 # 27枚引いてストレートフラッシュをカウント
-def test_max_hand():
+def hand_27_build():
     hand = []
-    deck = Deck()
+    deck = env.Deck()
     first_hand = deck.build_hands()
     hand = first_hand
     n = 1
-    while n < 27:
+    while n < 24:
         card = deck.draw_card()
         hand.append(card)
         n += 1
+    return hand
 
+def straight_flash_count_exp(hand):
     hand = sorted(hand, key=operator.itemgetter('color', 'number'))
     arr_straight_flashs = []
-    arr_three_card = []
-    arr_pre_straight_flashs = []
     straight_flash = []
     pre_card = {}
+    used_cards = []
     card_count = 0
-    for card in hand:
+    for card in hand[:]:
         if card_count != 0:
             if card['color'] == pre_card['color'] and card['number'] == pre_card['number'] + 1:
                 straight_flash.append(card)
@@ -221,24 +134,213 @@ def test_max_hand():
         if len(straight_flash) == 3:
             arr_straight_flashs.append(straight_flash)
             straight_flash = []
-
+            used_cards.extend([card_count - 2, card_count - 1, card_count])
         pre_card = card
         card_count += 1
-
-    return len(arr_straight_flashs)
-
-# 4.38くらい
-def thousand_straight_flash_count():
-    straight_flash_count = 0
     n = 0
-    while n < 1000:
-        straight_flash = test_max_hand()
-        straight_flash_count += straight_flash
+    straight_flash_count = len(arr_straight_flashs)
+    straight_flash_max_list = []
+    while n < straight_flash_count:
+        # 各sfの最大値を取得
+        sf_max_number = arr_straight_flashs[n][2]['number']
+        straight_flash_max_list.append(sf_max_number)
+        n+=1
+    # straight_flash_count = len(straight_flash_max_list)
+    # straight_flash_av = sum(straight_flash_max_list) / straight_flash_count if straight_flash_count != 0 else 0
+    # 使用したカードを取り除く
+    for i in sorted(used_cards, reverse=True):
+        hand.pop(i)
+    return sorted(straight_flash_max_list, reverse=True), hand
+
+def three_card_count_exp(hand):
+    hand = sorted(hand, key=lambda x: x['number'])
+    pre_card_number = 0
+    pre_three_card = []
+    three_card = []
+    three_card_number_list = []
+    used_cards = []
+    card_count = 0
+    for card in hand:
+        if pre_card_number == card['number']:
+            pre_three_card.append(card)
+        else:
+            pre_three_card = []
+            pre_three_card.append(card)
+        pre_card_number = card['number']
+
+        if len(pre_three_card) == 3:
+            three_card.append(pre_three_card)
+            pre_card_number = 0
+            used_cards.extend([card_count - 2, card_count - 1, card_count])
+        card_count += 1
+    three_card_count = len(three_card)
+    n = 0
+    while n < three_card_count:
+        three_card_number_list.append(three_card[n][2]['number'])
+        n+=1
+    # three_card_av = sum(three_card_number_list) / three_card_count if three_card_count != 0 else 0
+
+    for i in sorted(used_cards, reverse=True):
+        hand.pop(i)
+    return sorted(three_card_number_list, reverse=True), hand
+
+def flash_count_exp(hand):
+    hand = sorted(hand, key=lambda x: x['number'],reverse=True)
+    hand = sorted(hand, key=lambda x: x['color'])
+    pre_card = None
+    card_count = 0
+    pre_flash = []
+    flash = []
+    used_cards = []
+    while card_count < len(hand):
+        card = hand[card_count]
+        if pre_card != None:
+            if card['color'] != pre_card['color']:
+                pre_flash = []
+            pre_flash.append(card)
+        pre_card = card
+        if len(pre_flash) == 3:
+            flash.append(pre_flash)
+            used_cards.extend([card_count - 2, card_count - 1, card_count])
+            pre_flash = []
+            pre_card = None
+        card_count += 1
+    sum_flash = []
+    for comb in flash:
+        sum = 0
+        for card in comb:
+            sum += card['number']
+        sum_flash.append(sum / 3)
+    sum_flash = sorted(sum_flash,reverse=True)
+
+    for i in sorted(used_cards, reverse=True):
+        hand.pop(i)
+    return sorted(sum_flash, reverse=True), hand
+def straight_count_exp(hand):
+    hand = sorted(hand, key=lambda x: x['number'],reverse=True)
+    straights = []
+    numbers = [0,0,0,0,0,0,0,0,0,0]
+    card_count = 0
+    while card_count < len(hand):
+        card_number = hand[card_count]['number']
+        if card_number == 10:
+            numbers[0] += 1
+        elif card_number == 9:
+            numbers[1] += 1
+        elif card_number == 8:
+            numbers[2] += 1
+        elif card_number == 7:
+            numbers[3] += 1
+        elif card_number == 6:
+            numbers[4] += 1
+        elif card_number == 5:
+            numbers[5] += 1
+        elif card_number == 4:
+            numbers[6] += 1
+        elif card_number == 3:
+            numbers[7] += 1
+        elif card_number == 2:
+            numbers[8] += 1
+        elif card_number == 1:
+            numbers[9] += 1
+        card_count += 1
+
+    n = 0
+    while n < 8:
+        straight = 10 - n
+        if numbers[n] == numbers[n + 1] == numbers[n + 2] == 2:
+            straights.extend([straight,straight])
+            numbers[n] -= 2
+            numbers[n + 1] -= 2
+            numbers[n + 2] -= 2
+        elif numbers[n] > 0 and numbers[n + 1] > 0 and numbers[n + 2] > 0:
+            straights.append(straight)
+            numbers[n] -= 1
+            numbers[n + 1] -= 1
+            numbers[n + 2] -= 1
         n += 1
-    print('straight_flash_count',straight_flash_count)
-    print('straight_flash_rate',straight_flash_count / 1000)
+    buta = buta_count_exp(numbers)
+    return sorted(straights, reverse=True), buta
+def buta_count_exp(numbers):
+    butas = []
+    buta = []
+    count = 0
+    for i in numbers:
+        if i != 0:
+            n = 0
+            while n < i:
+                buta.append(10 - count)
+                n += 1
+                if len(buta) == 3:
+                    butas.append(sum(buta) / len(buta))
+                    buta = []
+        count += 1
+    return sorted(butas, reverse=True)
+
+def calculate_hand_list_exp():
+   hand = hand_27_build()
+   hand_rank = []
+   sf_list, hand =  straight_flash_count_exp(hand)
+   three_card_list, hand = three_card_count_exp(hand)
+   flash_list, hand = flash_count_exp(hand)
+   straight_list, buta = straight_count_exp(hand)
+   pre_hand_rank = [sf_list, three_card_list,flash_list,straight_list,buta]
+   hand_rank = []
+   hand_count = 0
+   n = 0
+   while n < 5:
+       hand = pre_hand_rank[n]
+       hand_count = len(hand)
+       num = 0
+       while num < hand_count:
+           hand_rank.append({'hand': 5 - n, 'score': hand[num]})
+           num+=1
+       n+=1
+   return hand_rank
+
+def build_hand_ranks_exp():
+    hand_ranks = []
+    prob_hand_ranks = []
+    num = 0
+    while num < 10:
+        hand_ranks.append([])
+        
+        num_2 = 0
+        while num_2 < 5:
+            hand_ranks[num].append([])
+            num_3 = 0
+            while num_3 < 10:
+                hand_ranks[num][num_2].append(0)
+                num_3 += 1
+            num_2 += 1
+        num += 1
+
+    c = 0
+    n = 1000
+    while c < n:
+        hand_rank = calculate_hand_list_exp()
+        count = 0
+        while count < 10:
+            hand_index = 5 - hand_rank[count]['hand']
+            score_index = 10 - round(hand_rank[count]['score'])
+            hand_ranks[count][hand_index][score_index] += 1
+            count += 1
+        c += 1
+    return hand_ranks
+
+def test_calculate_hand_list_exp():
+    # 50パターンのどれかをカウントしたい×10=500
+    # 順位→役→スコア
+    hand_ranks = build_hand_ranks_exp()
+    five_middle_rane = []
+    semi_middle_rane = []
+    wing_rane = []
+
+    
 
 
+
+test_calculate_hand_list_exp()
 # 手番やレーンのからに関係なく選ぶ関数
 # 63個ある選択肢を全て選ぶ
 # 空のレーンにも期待値あり
@@ -261,13 +363,11 @@ def decision_option(table, hand):
     print(exp_table)
 
 def test_decision_option():
-    table_o = Table()
+    table_o = env.Table()
     table = table_o.check_table()
-    deck = Deck()
+    deck = env.Deck()
     hand = deck.build_hands()
     decision_option(table, hand)
-
-test_decision_option()
 
 # 自分だけ空のレーンがあるか
 def select_card_table(table, hand):
@@ -302,39 +402,45 @@ def second_decision(table,hand,competitor_lane):
     print('second_decision')
 
 
-# 考える必要のあるstate数を計算
-def caluculate_state_count():
-    state_count = math.comb(60,7) * 63 * 53 * 52
-    next_state_count = 36 * 8 * 10 * 20
-    test = 10 ** 9
-    # 67兆~
-    print(state_count)
-    # 57600
-    print(next_state_count)
-    # 1億
-    print(test)
-# select_card_table()
 
-caluculate_state_count()
+# 一旦使用しない関数
+# count 3.45  av 6.5
+# def thousand_straight_flash_count():
+#     straight_flash_count = 0
+#     n = 0
+#     sf_av = 0
+#     while n < 1000:
+#         count, av = calculate_hand_list_exp()
+#         straight_flash_count += count
+#         sf_av += av
+#         n += 1
+#     print('straight_flash_count',straight_flash_count)
+#     print('straight_flash_rate',straight_flash_count / 1000)
+#     print('straight_flash_max_number_av', sf_av / 1000)
+
+# 考える必要のあるstate数を計算
+# def caluculate_state_count():
+#     state_count = math.comb(60,7) * 63 * 53 * 52
+#     next_state_count = 36 * 8 * 10 * 20
+#     test = 10 ** 9
+#     # 67兆~
+#     print(state_count)
+#     # 57600
+#     print(next_state_count)
+#     # 1億
+#     print(test)
+
 # 学習時変数
 #
 
 # 50%以上はロイヤルストレートフラッシュが出る
 # 10,9,8のうち2枚あったら、3枚あったらそれからおく（真ん中5個のランダムに）
 # それ以下が揃ってたら、一枚だけ真ん中5個にランダムに置く
-# 
 
 # playerの選択評価アルゴリズムを確率
-# 場合わけして考える
-# 先攻初手（強い組み合わせがある場合、ない場合）
-# 既に相手のカードあり
-# 既に空のレーンなし
-# 既に相手の空のレーンなし
-
-# 初手のハンドの確率を推定？（ストレートフラッシュの確率？）
-# 自分のテーブルだけ考える
-# 中央５つ、端から二番目、端でスコアを変える
-# 空のレーンを優先する
+# 各テーブルの勝率で考える
+# 空のテーブル：1：5つの平均、2：5つを合計した役の強さごとの確率
+# 空じゃないテーブル
 
 # プレイヤーのプレイログを取得
 # 評価関数：これは自分で考えなくてはいけない
