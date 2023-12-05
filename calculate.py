@@ -59,8 +59,9 @@ def playing_game():
 
 # outs計算アルゴリズムテスト
 def test_outs_prob_calculate():
-    card_count = 46
-    outs = 2
+    put_count = 18
+    card_count = 60 - (put_count*2) - (7*2)
+    outs = 1
     exp_draw_count = calculate_draw_exp(outs,card_count)
     exp_draw_count_2 = two_calculate_draw_exp(outs,outs,card_count)
     dup_exp_draw_count_2 = dup_two_calculate_draw_exp(2,card_count)
@@ -69,7 +70,7 @@ def test_outs_prob_calculate():
     print('dup_two_draw',dup_exp_draw_count_2)
     print('Get_exp', get_exp(card_count, outs))
 
-
+test_outs_prob_calculate()
 # ハンドのスコア計算
 # 役：ストレートフラッシュ、スリーカード、フラッシュ、ストレート、ブタ
 # スコアの評価方法：役→数
@@ -400,3 +401,31 @@ def get_rane_rank_exp():
     print(semi_middle_exp)
     print(wing_exp)
     return five_middle_exp, semi_middle_exp, wing_exp
+
+
+# 一旦使用しない関数
+# count 3.45  av 6.5
+def thousand_straight_flash_count():
+    straight_flash_count = 0
+    n = 0
+    sf_av = 0
+    while n < 1000:
+        count, av = calculate_hand_list_exp()
+        straight_flash_count += count
+        sf_av += av
+        n += 1
+    print('straight_flash_count',straight_flash_count)
+    print('straight_flash_rate',straight_flash_count / 1000)
+    print('straight_flash_max_number_av', sf_av / 1000)
+
+# 考える必要のあるstate数を計算
+def caluculate_state_count():
+    state_count = math.comb(60,7) * 63 * 53 * 52
+    next_state_count = 36 * 8 * 10 * 20
+    test = 10 ** 9
+    # 67兆~
+    print(state_count)
+    # 57600
+    print(next_state_count)
+    # 1億
+    print(test)

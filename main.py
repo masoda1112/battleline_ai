@@ -8,9 +8,31 @@ import env
 import player
 import calculate
 
-
+# 各役の確率で勝率判断
 # 期待値の計算
-def calculate_exp_lane(lane):
+# プレイアルゴリズム残タスク
+# ハンドを含めた勝率計算
+# ドロー枚数を含めた期待値計算
+# 
+calculate.test_calculate_hand_list_exp()
+
+# def cal_win_rate():
+
+
+def calculate_exp_lane(lane,lane_number):
+    # 空の場合とそうでない場合の条件分岐 len(lane) == 0
+    # 空の場合lane_numberで分岐 0or8,1or7,else
+    # 空の場合
+    if len(lane) == 0:
+        five_middle_rane, semi_middle_rane, wing_rane = calculate.test_calculate_hand_list_exp()
+        win_rate = 0
+        if lane_number == 0 or lane_number == 8:
+            win_rate = cal_win_rate(lane, wing_rane)
+        elif lane_number == 1 or lane_number == 7:
+            win_rate = cal_win_rate(lane, semi_middle_rane)
+        else:
+            win_rate = cal_win_rate(lane, five_middle_rane)
+
     n = random.randrange(0, 3)
     return n
 
@@ -19,11 +41,14 @@ def decision_option(table, hand):
     test_table = table
     exp_table = []
     n = 0
-    while n < 9:
-        second_player_exp = calculate_exp_lane(test_table[n][0])
-        first_player_exp = calculate_exp_lane(test_table[n][1])
-        exp_table.append(second_player_exp - first_player_exp)
-        n+=1
+    c = 0
+    while c < 7:
+        # handをそれぞれ抜き、tableにつけて算出
+        while n < 9:
+            game_exp = calculate_exp_lane(test_table[n][1],hand, n)
+            exp_table.append(game_exp)
+            n+=1
+        c += 1
     print(exp_table)
 
 def test_decision_option():
@@ -67,50 +92,17 @@ def second_decision(table,hand,competitor_lane):
 
 
 
-# 一旦使用しない関数
-# count 3.45  av 6.5
-# def thousand_straight_flash_count():
-#     straight_flash_count = 0
-#     n = 0
-#     sf_av = 0
-#     while n < 1000:
-#         count, av = calculate_hand_list_exp()
-#         straight_flash_count += count
-#         sf_av += av
-#         n += 1
-#     print('straight_flash_count',straight_flash_count)
-#     print('straight_flash_rate',straight_flash_count / 1000)
-#     print('straight_flash_max_number_av', sf_av / 1000)
-
-# 考える必要のあるstate数を計算
-# def caluculate_state_count():
-#     state_count = math.comb(60,7) * 63 * 53 * 52
-#     next_state_count = 36 * 8 * 10 * 20
-#     test = 10 ** 9
-#     # 67兆~
-#     print(state_count)
-#     # 57600
-#     print(next_state_count)
-#     # 1億
-#     print(test)
 
 # 学習時変数
 #
 
-# 50%以上はロイヤルストレートフラッシュが出る
-# 10,9,8のうち2枚あったら、3枚あったらそれからおく（真ん中5個のランダムに）
-# それ以下が揃ってたら、一枚だけ真ん中5個にランダムに置く
+# 残タスク
+# playerの選択評価アルゴリズムを作成
+# レーンごと勝率計算
+# 全体勝率判断
 
-# playerの選択評価アルゴリズムを確率
-# 各テーブルの勝率で考える
-# 空のテーブル：1：5つの平均、2：5つを合計した役の強さごとの確率
-# 空じゃないテーブル
-
-# プレイヤーのプレイログを取得
-# 評価関数：これは自分で考えなくてはいけない
-# 戦術評価概念
-# 引くまでの枚数の期待値
-# 自分が引く確率
+# 勝敗決定アルゴリズム作成
+# UI作成
 
 
 # 残りタスク
